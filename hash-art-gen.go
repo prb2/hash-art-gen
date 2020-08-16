@@ -13,10 +13,12 @@ func main() {
     var (
         str_in string
         border bool
+        kind int
     )
     flag.StringVar(&str_in, "seed", "",
         "provide a short string to use as a seed, otherwise a random seed will be used")
         flag.BoolVar(&border, "border", false, "draw border")
+        flag.IntVar(&kind, "kind", 0, "0: ssh chars, 1: symbols, 2: arrows")
     flag.Parse()
 
     if len(str_in) == 0 {
@@ -34,17 +36,41 @@ func main() {
     glog.V(3).Infof("b: %b\n", h.Sum(nil))
     glog.V(3).Infof("v: %v\n", h.Sum(nil))
 
-    augmentation_string := " .o+=*BOX@%&#/^"
-    aug_slice := make([]rune, len(augmentation_string))
-    for  i, c := range augmentation_string {
-        aug_slice[i] = c
-    }
+
+    aug_slice := get_aug(augType(kind))
     glog.V(1).Infof("Augmentation runes\n\n\t%c\n\n", aug_slice)
 
     glog.V(1).Info("Gen art\n")
     grid := gen_art_from_hash(hash)
     glog.Flush()
     print_grid_runes(&grid, aug_slice, border)
+}
+
+type augType int
+const (
+    ssh = iota
+    symbols
+    arrows
+)
+
+func get_aug(kind augType) []rune {
+    var aug string
+    switch kind {
+    case symbols:
+        aug = "TODO"
+    case arrows:
+        aug = " ↶↠↻↙↫⇝←↯↝⇗⇢⇁⇀⇶"
+    case ssh:
+        fallthrough
+    default:
+        aug = " .o+=*BOX@%&#/^"
+    }
+
+    aug_slice := make([]rune, len(aug))
+    for  i, c := range aug {
+        aug_slice[i] = c
+    }
+    return aug_slice
 }
 
 func gen_art_from_hash(hash []byte) [9][17]int {
