@@ -5,29 +5,42 @@ import (
     "flag"
     "fmt"
     "github.com/golang/glog"
+    "math/rand"
+    "time"
 )
 
 
 func main() {
-
     var (
         str_in string
         border bool
         kind int
     )
+    defer glog.Flush()
+    rand.Seed(time.Now().UnixNano())
+
     flag.StringVar(&str_in, "seed", "",
         "provide a short string to use as a seed, otherwise a random seed will be used")
         flag.BoolVar(&border, "border", false, "draw border")
         flag.IntVar(&kind, "kind", 0, "0: ssh chars, 1: symbols, 2: arrows")
     flag.Parse()
 
-    if len(str_in) == 0 {
-        // TODO: make this a random string
-        str_in = "helloworld"
+    var bytes_in []byte
+    if len(str_in) > 0 {
+        glog.V(1).Infof("Using input: %s", str_in)
+        bytes_in = []byte(str_in)
+    } else {
+        bytes_in = make([]byte, 100)
+        _, err := rand.Read(bytes_in)
+        if err != nil {
+            glog.Error(err)
+            return
+        }
+        glog.V(1).Infof("Using rand bytes: %v", bytes_in)
     }
 
     h := sha256.New()
-    h.Write([]byte(str_in))
+    h.Write(bytes_in)
 
     hash := h.Sum(nil)
     glog.V(1).Infof("Generating random art with seed\n\n\t%s\n\n", str_in)
@@ -42,7 +55,6 @@ func main() {
 
     glog.V(1).Info("Gen art\n")
     grid := gen_art_from_hash(hash)
-    glog.Flush()
     print_grid_runes(&grid, aug_slice, border)
 }
 
