@@ -8,7 +8,7 @@ Ref: [The drunken bishop: An analysis of the OpenSSH fingerprint visualization a
 ```
 
 **Example output**
-```sh
+```
 Generating random art with seed
 
         alsdfasasdkjflaasdfasdf

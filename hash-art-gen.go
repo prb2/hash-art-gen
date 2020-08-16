@@ -4,14 +4,19 @@ import (
     "crypto/sha256"
     "flag"
     "fmt"
+    "github.com/golang/glog"
 )
-
 
 
 func main() {
 
-    var str_in string
-    flag.StringVar(&str_in, "seed", "", "provide a short string to use as a seed, otherwise a random seed will be used")
+    var (
+        str_in string
+        border bool
+    )
+    flag.StringVar(&str_in, "seed", "",
+        "provide a short string to use as a seed, otherwise a random seed will be used")
+        flag.BoolVar(&border, "border", false, "draw border")
     flag.Parse()
 
     if len(str_in) == 0 {
@@ -23,45 +28,37 @@ func main() {
     h.Write([]byte(str_in))
 
     hash := h.Sum(nil)
-    fmt.Printf("Generating random art with seed\n\n\t%s\n\n", str_in)
-    fmt.Printf("SHA256 hash\n\n\t%x\n\n", hash)
+    glog.V(1).Infof("Generating random art with seed\n\n\t%s\n\n", str_in)
+    glog.V(1).Infof("SHA256 hash\n\n\t%x\n\n", hash)
 
-    //fmt.Printf("b: %b\n", h.Sum(nil))
-    //fmt.Printf("v: %v\n", h.Sum(nil))
+    glog.V(3).Infof("b: %b\n", h.Sum(nil))
+    glog.V(3).Infof("v: %v\n", h.Sum(nil))
 
     augmentation_string := " .o+=*BOX@%&#/^"
     aug_slice := make([]rune, len(augmentation_string))
     for  i, c := range augmentation_string {
         aug_slice[i] = c
     }
-    fmt.Printf("Augmentation runes\n\n\t%c\n\n", aug_slice)
+    glog.V(1).Infof("Augmentation runes\n\n\t%c\n\n", aug_slice)
 
-    fmt.Println("Gen art\n")
-    gen_art_from_hash(hash, aug_slice)
+    glog.V(1).Info("Gen art\n")
+    grid := gen_art_from_hash(hash)
+    glog.Flush()
+    print_grid_runes(&grid, aug_slice, border)
 }
 
-func gen_art_from_hash(hash []byte, aug_slice []rune) {
-
-    //fmt.Printf("%b, is type: %T, len: %v\n", h.Sum(nil), h.Sum(nil), len(h.Sum(nil)))
-
-    //as_bytes := []byte(h.Sum(nil))
-    //fmt.Printf("%b, is type: %T, len: %v\n", as_bytes, as_bytes, len(as_bytes))
-
+func gen_art_from_hash(hash []byte) [9][17]int {
     bits := ""
     for _, n := range hash {
         as_bin := fmt.Sprintf("%08b", n)
-        //leadingz := bits.LeadingZeros(uint(n))
-        //with_lead := ("0" * leadingz) + as_bin
-        //fmt.Println("Orig: ", n, "As bin: ", as_bin, "with leading: ", with_lead)
-        //fmt.Println("Orig: ", n, "As bin: ", as_bin)
         bits += as_bin
     }
-    //fmt.Println(bits, "len", len(bits))
+    glog.V(3).Info(bits, "len", len(bits))
 
     grid := [9][17]int{}
     num_rows := len(grid)
     num_cols := len(grid[0])
-    //fmt.Printf("Grid: [%v x %v]\n", num_rows, num_cols)
+    glog.V(3).Infof("Grid: [%v x %v]\n", num_rows, num_cols)
 
     within_bound := func(i, j int) bool {
         return i >= 0 && i < num_rows && j >= 0 && j < num_cols
@@ -80,7 +77,7 @@ func gen_art_from_hash(hash []byte, aug_slice []rune) {
         if len(movement) == 0 {
             movement = "stayed"
         }
-        //fmt.Printf("%v to (%v, %v)\n", movement, i, j)
+        glog.V(3).Infof("%v to (%v, %v)\n", movement, i, j)
         grid[i][j] += 1
         return i, j
     }
@@ -98,7 +95,7 @@ func gen_art_from_hash(hash []byte, aug_slice []rune) {
         if len(movement) == 0 {
             movement = "stayed"
         }
-        //fmt.Printf("%v to (%v, %v)\n", movement, i, j)
+        glog.V(3).Infof("%v to (%v, %v)\n", movement, i, j)
         grid[i][j] += 1
         return i, j
     }
@@ -116,7 +113,7 @@ func gen_art_from_hash(hash []byte, aug_slice []rune) {
         if len(movement) == 0 {
             movement = "stayed"
         }
-        //fmt.Printf("%v to (%v, %v)\n", movement, i, j)
+        glog.V(3).Infof("%v to (%v, %v)\n", movement, i, j)
         grid[i][j] += 1
         return i, j
     }
@@ -134,20 +131,16 @@ func gen_art_from_hash(hash []byte, aug_slice []rune) {
         if len(movement) == 0 {
             movement = "stayed"
         }
-        //fmt.Printf("%v to (%v, %v)\n", movement, i, j)
+        glog.V(3).Infof("%v to (%v, %v)\n", movement, i, j)
         grid[i][j] += 1
         return i, j
     }
-    //fmt.Println(within_bound(100, -1))
-    //fmt.Println(within_bound(1, 3))
-    //fmt.Println(within_bound(1, 17))
-    //fmt.Println(within_bound(9, 3))
 
     x := 4
     y := 9
     for i := 0; i < len(bits); i += 2 {
         move := bits[i:i+2]
-        //fmt.Printf("%v\n", move)
+        glog.V(3).Infof("%v\n", move)
 
         switch move {
             case "00": {
@@ -165,28 +158,34 @@ func gen_art_from_hash(hash []byte, aug_slice []rune) {
         }
 
     }
-
     //print_grid(&grid)
-
-    print_grid_runes(&grid, aug_slice)
+    return grid
 }
-
 
 func print_grid(grid *[9][17]int) {
     for i := 0; i < len(grid); i++ {
-        fmt.Println(grid[i])
+        glog.V(1).Info(grid[i])
     }
 }
 
-func print_grid_runes(grid *[9][17]int, aug_slice []rune) {
-
-    fmt.Println("\t+-------------------+")
+func print_grid_runes(grid *[9][17]int, aug_slice []rune, border bool) {
+    fmt.Println()
+    if border {
+        fmt.Println("+-------------------+")
+    }
     for i := 0; i < len(grid); i++ {
         row := ""
         for j := 0; j < len(grid[i]); j++ {
             row += fmt.Sprintf("%c", aug_slice[grid[i][j]])
         }
-        fmt.Println("\t|", row, "|")
+        if border {
+            fmt.Println("|", row, "|")
+        } else {
+            fmt.Println(row)
+        }
     }
-    fmt.Println("\t+-------------------+\n\n")
+    if border {
+        fmt.Println("+-------------------+")
+    }
+    fmt.Println()
 }
